@@ -7,11 +7,11 @@ class GroupSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Group
-        fields = ('id', 'title', 'slug', 'description')
+        fields = ('__all__')
 
 
 class PostSerializer(serializers.ModelSerializer):
-    author = serializers.StringRelatedField(read_only=True)
+    author = serializers.SlugRelatedField(read_only=True, slug_field='username')
 
     class Meta:
         model = Post
@@ -19,9 +19,12 @@ class PostSerializer(serializers.ModelSerializer):
 
 
 class CommentSerializer(serializers.ModelSerializer):
-    post = serializers.PrimaryKeyRelatedField(read_only=True)
-    author = serializers.StringRelatedField(read_only=True)
+    author = serializers.SerializerMethodField()
 
     class Meta:
         model = Comment
-        fields = ('id', 'author', 'post', 'text', 'created', 'post')
+        fields = ('id', 'author', 'post', 'text', 'created')
+        read_only_fields = ['post', 'author']
+
+    def get_author(self, obj):
+        return obj.author.username
