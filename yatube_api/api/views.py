@@ -1,4 +1,3 @@
-from django.http import Http404
 from django.shortcuts import get_object_or_404
 from rest_framework import viewsets, status
 from rest_framework.response import Response
@@ -84,7 +83,10 @@ class CommentViewSet(viewsets.ModelViewSet):
     def update(self, request, post_id=None, pk=None):
         comment = self.get_object()
         if request.user == comment.author:
-            serializer = self.serializer_class(comment, data=request.data)
+            serializer = self.serializer_class(
+                comment,
+                data=request.data
+            )
             if serializer.is_valid():
                 serializer.save()
                 return Response(serializer.data, status=status.HTTP_200_OK)
@@ -101,7 +103,11 @@ class CommentViewSet(viewsets.ModelViewSet):
     def partial_update(self, request, post_id=None, pk=None):
         comment = self.get_object()
         if request.user == comment.author:
-            serializer = self.serializer_class(comment, data=request.data, partial=True)
+            serializer = self.serializer_class(
+                comment,
+                data=request.data,
+                partial=True
+            )
             if serializer.is_valid():
                 serializer.save()
                 return Response(serializer.data, status=status.HTTP_200_OK)
