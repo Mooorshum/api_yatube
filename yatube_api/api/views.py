@@ -1,9 +1,10 @@
+from django.core.exceptions import PermissionDenied
 from django.shortcuts import get_object_or_404
 from rest_framework import viewsets, status
 from rest_framework.response import Response
 
+from api.serializers import CommentSerializer, GroupSerializer, PostSerializer
 from posts.models import Comment, Group, Post
-from api.serializers import CommentSerializer, PostSerializer, GroupSerializer
 
 STATUS_CODE_MESSAGES = {
     '403_message_for_post': 'Это чужой пост!',
@@ -24,45 +25,18 @@ class PostViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         serializer.save(author=self.request.user)
 
-    def update(self, request, pk=None):
+    def perform_update(self, serializer):
         post = self.get_object()
-        serializer = self.serializer_class(post, data=request.data)
-        if serializer.is_valid():
-            if self.request.user == post.author:
-                serializer.save()
-                return Response(serializer.data)
-            return Response(
-                STATUS_CODE_MESSAGES['403_message_for_post'],
-                status=status.HTTP_403_FORBIDDEN
-            )
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        if self.request.user == post.author:
+            return super().perform_update(serializer)
+        raise PermissionDenied()
 
-    def partial_update(self, request, pk=None):
-        post = self.get_object()
-        serializer = self.serializer_class(
-            post,
-            data=request.data,
-            partial=True
-        )
-        if serializer.is_valid():
-            if self.request.user == post.author:
-                serializer.save()
-                return Response(serializer.data)
-            return Response(
-                STATUS_CODE_MESSAGES['403_message_for_post'],
-                status=status.HTTP_403_FORBIDDEN
-            )
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-    def destroy(self, request, pk=None):
+    def perform_destroy(self, instance):
         post = self.get_object()
         if self.request.user == post.author:
             post.delete()
-            return Response(status=status.HTTP_204_NO_CONTENT)
-        return Response(
-            STATUS_CODE_MESSAGES['403_message_for_post'],
-            status=status.HTTP_403_FORBIDDEN
-        )
+            return super().perform_destroy(instance)
+        raise PermissionDenied()
 
 
 class CommentViewSet(viewsets.ModelViewSet):
@@ -80,54 +54,14 @@ class CommentViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         serializer.save(author=self.request.user, post=self.get_post())
 
-    def update(self, request, post_id=None, pk=None):
+    def perform_update(self, serializer):
         comment = self.get_object()
-        if request.user == comment.author:
-            serializer = self.serializer_class(
-                comment,
-                data=request.data
-            )
-            if serializer.is_valid():
-                serializer.save()
-                return Response(serializer.data, status=status.HTTP_200_OK)
-            return Response(
-                serializer.errors,
-                status=status.HTTP_400_BAD_REQUEST
-            )
-        else:
-            return Response(
-                STATUS_CODE_MESSAGES['403_message_for_comment'],
-                status=status.HTTP_403_FORBIDDEN
-            )
+        if self.request.user == comment.author:
+            return super().perform_update(serializer)
+        raise PermissionDenied()
 
-    def partial_update(self, request, post_id=None, pk=None):
+    def perform_destroy(self, instance):
         comment = self.get_object()
-        if request.user == comment.author:
-            serializer = self.serializer_class(
-                comment,
-                data=request.data,
-                partial=True
-            )
-            if serializer.is_valid():
-                serializer.save()
-                return Response(serializer.data, status=status.HTTP_200_OK)
-            return Response(
-                serializer.errors,
-                status=status.HTTP_400_BAD_REQUEST
-            )
-        else:
-            return Response(
-                STATUS_CODE_MESSAGES['403_message_for_comment'],
-                status=status.HTTP_403_FORBIDDEN
-            )
-
-    def destroy(self, request, post_id=None, pk=None):
-        comment = self.get_object()
-        if request.user == comment.author:
-            comment.delete()
-            return Response(status=status.HTTP_204_NO_CONTENT)
-        else:
-            return Response(
-                STATUS_CODE_MESSAGES['403_message_for_comment'],
-                status=status.HTTP_403_FORBIDDEN
-            )
+        if self.request.user == comment.author:
+            return super().perform_destroy(instance)
+        raise PermissionDenied()

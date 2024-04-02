@@ -7,7 +7,7 @@ class GroupSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Group
-        fields = ('__all__')
+        fields = '__all__'
 
 
 class PostSerializer(serializers.ModelSerializer):
@@ -18,16 +18,17 @@ class PostSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Post
-        fields = ('id', 'text', 'author', 'image', 'group', 'pub_date')
+        fields = '__all__'
 
 
 class CommentSerializer(serializers.ModelSerializer):
-    author = serializers.SerializerMethodField()
+    author = serializers.SlugRelatedField(
+        read_only=True,
+        slug_field='username'
+    )
 
     class Meta:
         model = Comment
-        fields = ('id', 'author', 'post', 'text', 'created')
-        read_only_fields = ['post', 'author']
+        fields = '__all__'
+        read_only_fields = ['post']
 
-    def get_author(self, obj):
-        return obj.author.username
